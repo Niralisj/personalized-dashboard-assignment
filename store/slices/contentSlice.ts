@@ -53,21 +53,23 @@ const contentSlice = createSlice({
       .addCase(loadArticles.pending, (state) => {
         state.status = "loading";
       })
-      .addCase(loadArticles.fulfilled, (state, action) => {
+        .addCase(loadArticles.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.articles = state.page === 1 ? action.payload : [...state.articles, ...action.payload];
+        const requestedPage = action.meta.arg.page;
+        state.articles = requestedPage === 1 ? action.payload : [...state.articles, ...action.payload];
         state.hasMore = action.payload.length > 0;
-        state.page += 1;
+        state.page = requestedPage + 1;
       })
       .addCase(loadArticles.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message ?? "Failed to load articles";
       })
-      .addCase(loadSearchResults.fulfilled, (state, action) => {
+            .addCase(loadSearchResults.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.articles = state.page === 1 ? action.payload : [...state.articles, ...action.payload];
+        const requestedPage = action.meta.arg.page;
+        state.articles = requestedPage === 1 ? action.payload : [...state.articles, ...action.payload];
         state.hasMore = action.payload.length > 0;
-        state.page += 1;
+        state.page = requestedPage + 1;
       });
   },
 });
