@@ -21,15 +21,11 @@ export default function SettingsPanel() {
   );
 
   return (
-    <div>
-      <h2 className="font-semibold mb-3">Categories</h2>
-
+    <fieldset>
+      <legend className="font-semibold mb-3">Select news categories to display</legend>
       <div className="space-y-2">
         {ALL_CATEGORIES.map((cat) => (
-          <label
-            key={cat}
-            className="flex items-center gap-2 cursor-pointer capitalize"
-          >
+          <label key={cat} className="flex items-center gap-2 cursor-pointer capitalize">
             <input
               type="checkbox"
               checked={selected.includes(cat)}
@@ -40,6 +36,6 @@ export default function SettingsPanel() {
           </label>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }

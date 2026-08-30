@@ -1,9 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { Article, Category } from "@/types";
+import { Article, Category, FeedItem } from "@/types";
 import { fetchArticlesByCategory, searchArticles } from "@/services/newsApi";
+import { fetchTrendingMovies } from "@/services/tmdbApi";
+import { fetchMockSocialPosts } from "@/services/mockData";
 
 interface ContentState {
   articles: Article[];
+  feed: FeedItem[];
   page: number;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -13,6 +16,7 @@ interface ContentState {
 
 const initialState: ContentState = {
   articles: [],
+  feed: [],
   page: 1,
   status: "idle",
   error: null,
@@ -23,8 +27,103 @@ const initialState: ContentState = {
 export const loadArticles = createAsyncThunk(
   "content/loadArticles",
   async ({ categories, page }: { categories: Category[]; page: number }) => {
-    const results = await Promise.all(categories.map((cat) => fetchArticlesByCategory(cat, page)));
+    const results = await Promise.all(
+      categories.map((cat) => fetchArticlesByCategory(cat, page))
+    );
     return results.flat();
+  }
+);
+
+export const loadUnifiedFeed = createAsyncThunk(
+  "content/loadUnifiedFeed",
+  async ({ categories, page }: { categories: Category[]; page: number }) => {
+    const newsPromise = Promise.all(
+      categories.map((cat) => fetchArticlesByCategory(cat, page))
+    ).then((results) => results.flat());
+
+    const moviesPromise =
+      page === 1 ? fetchTrendingMovies() : Promise.resolve([]);
+
+    const socialPromise =
+      page === 1 ? fetchMockSocialPosts() : Promise.resolve([]);
+
+    const [newsResults, movies, socialPosts] = await Promise.all([
+      newsPromise,
+      moviesPromise,
+      socialPromise,
+    ]);
+
+    const feedItems: FeedItem[] = [
+      ...newsResults.map((article) => ({
+        ...article,
+        contentType: "news" as const,
+      })),
+      ...movies.map((movie) => ({
+        ...movie,
+        contentType: "recommendation" as const,
+      })),
+      ...socialPosts.map((post) => ({
+        ...post,
+        contentType: "social" as const,
+      })),
+    ];
+
+    return feedItems.sort(() => Math.random() - 0.5);
+  }
+);
+
+export const loadTrendingFeed = createAsyncThunk(
+  "content/loadTrendingFeed",
+  async ({ categories, page }: { categories: Category[]; page: number }) => {
+    const newsPromise = Promise.all(
+      categories.map((cat) => fetchArticlesByCategory(cat, page))
+    ).then((results) => results.flat());
+
+    const moviesPromise =
+      page === 1 ? fetchTrendingMovies() : Promise.resolve([]);
+
+    const socialPromise =
+      page === 1 ? fetchMockSocialPosts() : Promise.resolve([]);
+
+    const [newsResults, movies, socialPosts] = await Promise.all([
+      newsPromise,
+      moviesPromise,
+      socialPromise,
+    ]);
+
+    const sortedNews = [...newsResults].sort(
+      (a, b) =>
+        new Date(b.publishedAt).getTime() -
+        new Date(a.publishedAt).getTime()
+    );
+
+    type ScoredItem = {
+      item: FeedItem;
+      score: number;
+    };
+
+    const scored: ScoredItem[] = [
+      ...socialPosts.map((post) => ({
+        item: { ...post, contentType: "social" as const },
+        score: post.likes / 1000,
+      })),
+
+      ...movies.map((movie, index) => ({
+        item: { ...movie, contentType: "recommendation" as const },
+        score: (movies.length - index) / movies.length,
+      })),
+
+      ...sortedNews.map((article, index) => ({
+        item: { ...article, contentType: "news" as const },
+        score:
+          (sortedNews.length - index) /
+          (sortedNews.length || 1),
+      })),
+    ];
+
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.item);
   }
 );
 
@@ -41,8 +140,10 @@ const contentSlice = createSlice({
   reducers: {
     resetContent: (state) => {
       state.articles = [];
+      state.feed = [];
       state.page = 1;
       state.hasMore = true;
+      state.error = null;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
@@ -50,13 +151,19 @@ const contentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Articles
       .addCase(loadArticles.pending, (state) => {
         state.status = "loading";
       })
-        .addCase(loadArticles.fulfilled, (state, action) => {
+      .addCase(loadArticles.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-        state.articles = requestedPage === 1 ? action.payload : [...state.articles, ...action.payload];
+
+        state.articles =
+          requestedPage === 1
+            ? action.payload
+            : [...state.articles, ...action.payload];
+
         state.hasMore = action.payload.length > 0;
         state.page = requestedPage + 1;
       })
@@ -64,12 +171,72 @@ const contentSlice = createSlice({
         state.status = "failed";
         state.error = action.error.message ?? "Failed to load articles";
       })
-            .addCase(loadSearchResults.fulfilled, (state, action) => {
+
+      // Unified Feed
+      .addCase(loadUnifiedFeed.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(loadUnifiedFeed.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-        state.articles = requestedPage === 1 ? action.payload : [...state.articles, ...action.payload];
+
+        state.feed =
+          requestedPage === 1
+            ? action.payload
+            : [...state.feed, ...action.payload];
+
+        state.hasMore = action.payload.some(
+          (item) => item.contentType === "news"
+        );
+        state.page = requestedPage + 1;
+      })
+      .addCase(loadUnifiedFeed.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message ?? "Failed to load feed";
+      })
+
+      // Trending Feed
+      .addCase(loadTrendingFeed.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(loadTrendingFeed.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        const requestedPage = action.meta.arg.page;
+
+        state.feed =
+          requestedPage === 1
+            ? action.payload
+            : [...state.feed, ...action.payload];
+
+        state.hasMore = action.payload.some(
+          (item) => item.contentType === "news"
+        );
+        state.page = requestedPage + 1;
+      })
+      .addCase(loadTrendingFeed.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message ?? "Failed to load trending feed";
+      })
+
+      // Search
+      .addCase(loadSearchResults.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(loadSearchResults.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        const requestedPage = action.meta.arg.page;
+
+        state.articles =
+          requestedPage === 1
+            ? action.payload
+            : [...state.articles, ...action.payload];
+
         state.hasMore = action.payload.length > 0;
         state.page = requestedPage + 1;
+      })
+      .addCase(loadSearchResults.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message ?? "Search failed";
       });
   },
 });
