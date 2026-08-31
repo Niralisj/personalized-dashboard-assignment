@@ -27,3 +27,16 @@ export function fetchMockSocialPosts(): Promise<SocialPost[]> {
     setTimeout(() => resolve(shuffle(MOCK_SOCIAL_POSTS)), 300);
   });
 }
+
+export function searchMockSocialPosts(query: string): Promise<SocialPost[]> {
+  const q = query.toLowerCase();
+  const matches = MOCK_SOCIAL_POSTS.filter(
+    (post) =>
+      post.content.toLowerCase().includes(q) ||
+      post.hashtag.toLowerCase().includes(q) ||
+      post.author.toLowerCase().includes(q)
+  );
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(shuffle(matches)), 300);
+  });
+}

@@ -1,12 +1,46 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import preferencesReducer from "@/store/slices/preferencesSlice";
+import contentReducer from "@/store/slices/contentSlice";
 import SettingsPanel from "./SettingsPanel";
+import { FeedItem } from "@/types";
 
-function renderWithStore() {
+const mockFeed: FeedItem[] = [
+  {
+    id: "news-1",
+    title: "Mock Headline",
+    description: "desc",
+    url: "https://example.com",
+    urlToImage: null,
+    publishedAt: "2026-01-01T00:00:00Z",
+    source: { name: "Mock Source" },
+    category: "technology",
+    contentType: "news",
+  },
+  {
+    id: "movie-1",
+    title: "Mock Movie",
+    description: "desc",
+    imageUrl: null,
+    actionLabel: "Watch Now",
+    contentType: "recommendation",
+  },
+];
+
+function renderWithStore(feed: FeedItem[] = []) {
   const store = configureStore({
-    reducer: { preferences: preferencesReducer },
+    reducer: { content: contentReducer },
+    preloadedState: {
+      content: {
+        articles: [],
+        feed,
+        page: 1,
+        status: "idle",
+        error: null,
+        hasMore: true,
+        searchQuery: "",
+      },
+    },
   });
   render(
     <Provider store={store}>
@@ -17,22 +51,19 @@ function renderWithStore() {
 }
 
 describe("SettingsPanel", () => {
-  it("renders all six category checkboxes", () => {
-    renderWithStore();
-    expect(screen.getByLabelText("technology")).toBeInTheDocument();
-    expect(screen.getByLabelText("sports")).toBeInTheDocument();
-    expect(screen.getByLabelText("business")).toBeInTheDocument();
+  it("shows an empty state when there is no feed data yet", () => {
+    renderWithStore([]);
+    expect(screen.getByText(/No articles yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No recommendations yet/i)).toBeInTheDocument();
   });
 
-  it("shows technology as checked by default", () => {
-    renderWithStore();
-    expect(screen.getByLabelText("technology")).toBeChecked();
+  it("renders a news item under Editor Picks", () => {
+    renderWithStore(mockFeed);
+    expect(screen.getByText("Mock Headline")).toBeInTheDocument();
   });
 
-  it("checking a new category updates the store", () => {
-    const store = renderWithStore();
-    fireEvent.click(screen.getByLabelText("sports"));
-    const state = store.getState();
-    expect(state.preferences.selectedCategories).toContain("sports");
+  it("renders a movie item under Trending Movies", () => {
+    renderWithStore(mockFeed);
+    expect(screen.getByText("Mock Movie")).toBeInTheDocument();
   });
 });

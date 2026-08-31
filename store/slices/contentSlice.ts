@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Article, Category, FeedItem } from "@/types";
 import { fetchArticlesByCategory, searchArticles } from "@/services/newsApi";
-import { fetchTrendingMovies } from "@/services/tmdbApi";
-import { fetchMockSocialPosts } from "@/services/mockData";
 import { ALL_CATEGORIES } from "@/store/slices/preferencesSlice";
+import { fetchTrendingMovies, searchMovies } from "@/services/tmdbApi";
+import { fetchMockSocialPosts, searchMockSocialPosts } from "@/services/mockData";
 
 interface ContentState {
   articles: Article[];
@@ -132,7 +132,17 @@ export const loadTrendingFeed = createAsyncThunk(
 export const loadSearchResults = createAsyncThunk(
   "content/loadSearchResults",
   async ({ query, page }: { query: string; page: number }) => {
-    return searchArticles(query, page);
+    const newsPromise = searchArticles(query, page);
+    const moviesPromise = page === 1 ? searchMovies(query) : Promise.resolve([]);
+    const socialPromise = page === 1 ? searchMockSocialPosts(query) : Promise.resolve([]);
+
+    const [news, movies, social] = await Promise.all([
+      newsPromise,
+      moviesPromise,
+      socialPromise,
+    ]);
+
+    return { news, movies, social };
   }
 );
 
@@ -212,23 +222,25 @@ const contentSlice = createSlice({
       })
 
        .addCase(loadSearchResults.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const requestedPage = action.meta.arg.page;
-        const searchFeedItems: FeedItem[] = action.payload.map((article) => ({
-          ...article,
-          contentType: "news" as const,
-        }));
-        state.articles =
-          requestedPage === 1
-            ? action.payload
-            : [...state.articles, ...action.payload];
-        state.feed =
-          requestedPage === 1
-            ? searchFeedItems
-            : [...state.feed, ...searchFeedItems];
-        state.hasMore = action.payload.length > 0;
-        state.page = requestedPage + 1;
-      })
+  state.status = "succeeded";
+  const requestedPage = action.meta.arg.page;
+  const { news, movies, social } = action.payload;
+
+  const searchFeedItems: FeedItem[] = [
+    ...news.map((article) => ({ ...article, contentType: "news" as const })),
+    ...movies.map((movie) => ({ ...movie, contentType: "recommendation" as const })),
+    ...social.map((post) => ({ ...post, contentType: "social" as const })),
+  ];
+
+  state.articles =
+    requestedPage === 1 ? news : [...state.articles, ...news];
+  state.feed =
+    requestedPage === 1
+      ? searchFeedItems
+      : [...state.feed, ...searchFeedItems];
+  state.hasMore = news.length > 0; // pagination still keyed off news, matches your infinite scroll pattern
+  state.page = requestedPage + 1;
+})
       .addCase(loadSearchResults.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message ?? "Search failed";

@@ -13,17 +13,18 @@ export default function SearchBar() {
   const [input, setInput] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (input.trim().length > 0) {
-        dispatch(setSearchQuery(input));
-        dispatch(resetContent());
-        dispatch(loadSearchResults({ query: input, page: 1 }));
-      }
-    }, 500);
+  const timer = setTimeout(() => {
+    dispatch(setSearchQuery(input));
+    dispatch(resetContent());
+    if (input.trim().length > 0) {
+      dispatch(loadSearchResults({ query: input, page: 1 }));
+    }
+    // if input is empty, ContentFeed's own useEffect will now
+    // fire (searchQuery is "") and reload the normal feed/trending view
+  }, 500);
 
-    return () => clearTimeout(timer);
-  }, [input, dispatch]);
-
+  return () => clearTimeout(timer);
+}, [input, dispatch]);
   return (
    <div>
   <label htmlFor="search-input" className="sr-only">Search articles</label>

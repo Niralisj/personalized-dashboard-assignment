@@ -36,3 +36,29 @@ export async function fetchTrendingMovies(): Promise<Recommendation[]> {
     actionLabel: "Watch Now" as const,
   }));
 }
+
+export async function searchMovies(query: string): Promise<Recommendation[]> {
+  const res = await fetch(
+    `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${TMDB_TOKEN}`,
+        accept: "application/json",
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`TMDB error: ${res.status}`);
+  }
+
+  const data: TmdbResponse = await res.json();
+
+  return data.results.slice(0, 6).map((movie) => ({
+    id: `tmdb-${movie.id}`,
+    title: movie.title,
+    description: movie.overview || "No description available.",
+    imageUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
+    actionLabel: "Watch Now" as const,
+  }));
+}

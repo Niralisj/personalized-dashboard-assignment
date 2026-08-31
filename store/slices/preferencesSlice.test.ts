@@ -1,20 +1,26 @@
-import preferencesReducer, { toggleCategory, toggleDarkMode } from "./preferencesSlice";
+import preferencesReducer, { setCategory, toggleDarkMode } from "./preferencesSlice";
 
 describe("preferencesSlice", () => {
   const initialState = {
-    selectedCategories: ["technology" as const],
+    selectedCategory: null,
     darkMode: false,
   };
 
-  it("adds a category when it is not already selected", () => {
-    const newState = preferencesReducer(initialState, toggleCategory("sports"));
-    expect(newState.selectedCategories).toContain("sports");
-    expect(newState.selectedCategories).toContain("technology");
+  it("sets a category when none is selected", () => {
+    const newState = preferencesReducer(initialState, setCategory("sports"));
+    expect(newState.selectedCategory).toBe("sports");
   });
 
-  it("removes a category when it is already selected", () => {
-    const newState = preferencesReducer(initialState, toggleCategory("technology"));
-    expect(newState.selectedCategories).not.toContain("technology");
+  it("clears the category when the same category is clicked again", () => {
+    const withSports = { ...initialState, selectedCategory: "sports" as const };
+    const newState = preferencesReducer(withSports, setCategory("sports"));
+    expect(newState.selectedCategory).toBeNull();
+  });
+
+  it("switches to a new category when a different one is clicked", () => {
+    const withSports = { ...initialState, selectedCategory: "sports" as const };
+    const newState = preferencesReducer(withSports, setCategory("technology"));
+    expect(newState.selectedCategory).toBe("technology");
   });
 
   it("toggles darkMode from false to true", () => {

@@ -60,6 +60,9 @@ const mockSocial: SocialPost[] = [
 function renderWithStore() {
   const store = configureStore({
     reducer: { preferences: preferencesReducer, content: contentReducer, favorites: favoritesReducer },
+    preloadedState: {
+      preferences: { selectedCategory: "technology", darkMode: false },
+    },
   });
   render(
     <Provider store={store}>
