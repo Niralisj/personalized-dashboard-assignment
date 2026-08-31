@@ -98,11 +98,15 @@ describe("ContentFeed integration (unified feed)", () => {
     });
   });
 
-  it("shows a retry button when the feed fails to load", async () => {
-    (fetchArticlesByCategory as jest.Mock).mockRejectedValue(new Error("Network error"));
+    it("shows a retry button when the feed fails to load", async () => {
+    (fetchArticlesByCategory as jest.Mock).mockResolvedValue(mockArticles);
+    (fetchTrendingMovies as jest.Mock).mockRejectedValue(new Error("Network error"));
     renderWithStore();
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
     });
   });
+  
+
+
 });

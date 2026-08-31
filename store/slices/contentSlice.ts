@@ -5,6 +5,11 @@ import { ALL_CATEGORIES } from "@/store/slices/preferencesSlice";
 import { fetchTrendingMovies, searchMovies } from "@/services/tmdbApi";
 import { fetchMockSocialPosts, searchMockSocialPosts } from "@/services/mockData";
 
+
+function pickRandomCategories(categories: Category[], count: number): Category[] {
+  const shuffled = [...categories].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 interface ContentState {
   articles: Article[];
   feed: FeedItem[];
@@ -38,11 +43,10 @@ export const loadArticles = createAsyncThunk(
 export const loadUnifiedFeed = createAsyncThunk(
   "content/loadUnifiedFeed",
   async ({ category, page }: { category: Category | null; page: number }) => {
-    const categoriesToFetch = category ? [category] : ALL_CATEGORIES;
-
-    const newsPromise = Promise.all(
-      categoriesToFetch.map((cat) => fetchArticlesByCategory(cat, page))
-    ).then((results) => results.flat());
+const categoriesToFetch = category ? [category] : pickRandomCategories(ALL_CATEGORIES, 3);    const newsPromise = Promise.all(
+      categoriesToFetch.map((cat) =>
+        fetchArticlesByCategory(cat, page).catch(() => [] as Article[])
+      )    ).then((results) => results.flat());
 
     const moviesPromise =
       page === 1 ? fetchTrendingMovies() : Promise.resolve([]);
@@ -78,11 +82,12 @@ export const loadUnifiedFeed = createAsyncThunk(
 export const loadTrendingFeed = createAsyncThunk(
   "content/loadTrendingFeed",
   async ({ category, page }: { category: Category | null; page: number }) => {
-    const categoriesToFetch = category ? [category] : ALL_CATEGORIES;
-
-    const newsPromise = Promise.all(
-      categoriesToFetch.map((cat) => fetchArticlesByCategory(cat, page))
-    ).then((results) => results.flat());
+const categoriesToFetch = category ? [category] : pickRandomCategories(ALL_CATEGORIES, 3);
+   const newsPromise = Promise.all(
+  categoriesToFetch.map((cat) =>
+    fetchArticlesByCategory(cat, page).catch(() => [] as Article[])
+  )
+).then((results) => results.flat());
 
     const moviesPromise =
       page === 1 ? fetchTrendingMovies() : Promise.resolve([]);

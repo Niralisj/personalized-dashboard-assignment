@@ -11,10 +11,12 @@ export async function fetchArticlesByCategory(
   const url = `${BASE_URL}?category=${category}&language=en&page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
 
   const res = await fetch(url);
-  if (!res.ok) {
+    if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("NewsAPI rate limit reached. Please try again in a few minutes.");
+    }
     throw new Error(`NewsAPI error: ${res.status}`);
   }
-
   const data: NewsApiResponse = await res.json();
 
   return data.articles
@@ -32,7 +34,12 @@ export async function searchArticles(query: string, page: number = 1): Promise<A
   )}&language=en&page=${page}&pageSize=10&sortBy=publishedAt&apiKey=${API_KEY}`;
 
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`NewsAPI error: ${res.status}`);
+  if (!res.ok) {
+  if (res.status === 429) {
+    throw new Error("NewsAPI rate limit reached. Please try again in a few minutes.");
+  }
+  throw new Error(`NewsAPI error: ${res.status}`);
+}
 
   const data: NewsApiResponse = await res.json();
   return data.articles

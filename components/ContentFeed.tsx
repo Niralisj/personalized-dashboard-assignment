@@ -2,8 +2,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { loadUnifiedFeed, loadTrendingFeed, loadSearchResults, resetContent } from "@/store/slices/contentSlice";
-import ArticleCard from "./ArticleCard";
 import FeedItemCard from "./FeedItemCard";
+import SkeletonCard from "./SkeletonCard";
+
 
 export default function ContentFeed({ view }: { view: "feed" | "trending" | "favorites" }) {
   const dispatch = useAppDispatch();
@@ -56,25 +57,26 @@ export default function ContentFeed({ view }: { view: "feed" | "trending" | "fav
   }, [loadMore, view, feed.length]);
 
   if (view === "favorites") {
-    if (favorites.length === 0) {
-      return <p className="text-gray-500 text-center py-12">No favorites yet.</p>;
-    }
-    return (
-      <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5">
-        {favorites.map((item) => (
-          <FeedItemCard key={`${item.contentType}-${item.id}`} item={item} />
-        ))}
-      </div>
-    );
+  if (favorites.length === 0) {
+    return <p className="text-gray-500 text-center py-12">No favorites yet.</p>;
   }
-
+  return (
+    <div key={view} className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5 fade-in">
+      {favorites.map((item) => (
+        <FeedItemCard key={`${item.contentType}-${item.id}`} item={item} />
+      ))}
+    </div>
+  );
+}
   if (status === "loading" && feed.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div role="status" aria-label="Loading feed" className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  return (
+    <div className="columns-1 md:columns-2 xl:columns-3 gap-5 fade-in">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </div>
+  );
+}
 
   if (status === "failed") {
     return (
@@ -103,7 +105,7 @@ export default function ContentFeed({ view }: { view: "feed" | "trending" | "fav
   }
 
   return (
-    <div>
+    <div key={view} className="fade-in">
       <div className="columns-1 md:columns-2 xl:columns-3 gap-5">
         {feed.map((item) => (
           <div key={item.id} className="mb-5 break-inside-avoid">

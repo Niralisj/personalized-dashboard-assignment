@@ -131,15 +131,31 @@ describe("loadUnifiedFeed thunk", () => {
     expect(state.feed).toHaveLength(1);
   });
 
-  it("sets status to failed and stores error message on rejection", async () => {
-    (fetchArticlesByCategory as jest.Mock).mockRejectedValue(new Error("API down"));
+    it("sets status to failed when a non-resilient source rejects", async () => {
+    (fetchArticlesByCategory as jest.Mock).mockResolvedValue([mockArticle]);
+    (fetchTrendingMovies as jest.Mock).mockRejectedValue(new Error("TMDB down"));
+    (fetchMockSocialPosts as jest.Mock).mockResolvedValue([mockPost]);
 
     const store = makeStore();
     await store.dispatch(loadUnifiedFeed({ category: "technology", page: 1 }));
     const state = store.getState().content;
 
     expect(state.status).toBe("failed");
-    expect(state.error).toBe("API down");
+    expect(state.error).toBe("TMDB down");
+  });
+
+  it("still succeeds with movies/social when news rejects (resilience)", async () => {
+    (fetchArticlesByCategory as jest.Mock).mockRejectedValue(new Error("429"));
+    (fetchTrendingMovies as jest.Mock).mockResolvedValue([mockMovie]);
+    (fetchMockSocialPosts as jest.Mock).mockResolvedValue([mockPost]);
+
+    const store = makeStore();
+    await store.dispatch(loadUnifiedFeed({ category: "technology", page: 1 }));
+    const state = store.getState().content;
+
+    expect(state.status).toBe("succeeded");
+    expect(state.feed).toHaveLength(2);
+    expect(state.feed.some((i) => i.contentType === "news")).toBe(false);
   });
 
   it("sets hasMore to false when no news items come back", async () => {
@@ -179,8 +195,10 @@ describe("loadTrendingFeed thunk", () => {
     expect(highIndex).toBeLessThan(lowIndex);
   });
 
-  it("sets status to failed on rejection", async () => {
-    (fetchArticlesByCategory as jest.Mock).mockRejectedValue(new Error("Trending fetch failed"));
+    it("sets status to failed when a non-resilient source rejects", async () => {
+    (fetchArticlesByCategory as jest.Mock).mockResolvedValue([mockArticle]);
+    (fetchTrendingMovies as jest.Mock).mockRejectedValue(new Error("Trending fetch failed"));
+    (fetchMockSocialPosts as jest.Mock).mockResolvedValue([mockPost]);
 
     const store = makeStore();
     await store.dispatch(loadTrendingFeed({ category: "technology", page: 1 }));
