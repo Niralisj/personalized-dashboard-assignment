@@ -2,38 +2,104 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode */
+  --background: #f3faf4;
+  --foreground: #051f20;
+
+  --surface: #ffffff;
+  --surface-secondary: #daf1de;
+
+  --border: #b9d9c4;
+  --accent: #235347;
+
+  --muted: #5c7c6d;
+
+  --news: #235347;
+  --movie: #0b2b26;
+  --social: #f2789c;
+  --social-bg: #fedada;
+  --social-border: #fbc4cf;
+  --social-tag-bg: #fff1f4;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  /* Dark mode */
+  --background: #051f20;
+  --foreground: #daf1de;
+
+  --surface: #0b2b26;
+  --surface-secondary: #163832;
+
+  --border: #235347;
+  --accent: #8eb69b;
+
+  --muted: #7fa38f;
+
+  --news: #8eb69b;
+  --movie: #163832;
+  --social: #ff9db8;
+  --social-bg: #3a1f2c;
+  --social-border: #4d2939;
+  --social-tag-bg: #2a1620;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+
+  --color-news: var(--news);
+  --color-movie: var(--movie);
+  --color-social: var(--social);
+  --color-social-bg: var(--social-bg);
+  --color-social-border: var(--social-border);
+  --color-social-tag-bg: var(--social-tag-bg);
+
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 }
 
+/* Global */
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+* { box-sizing: border-box; }
+
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), sans-serif;
+  transition: background .2s ease, color .2s ease;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }

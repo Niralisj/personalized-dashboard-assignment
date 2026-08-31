@@ -3,6 +3,7 @@ import { Article, Category, FeedItem } from "@/types";
 import { fetchArticlesByCategory, searchArticles } from "@/services/newsApi";
 import { fetchTrendingMovies } from "@/services/tmdbApi";
 import { fetchMockSocialPosts } from "@/services/mockData";
+import { ALL_CATEGORIES } from "@/store/slices/preferencesSlice";
 
 interface ContentState {
   articles: Article[];
@@ -36,9 +37,11 @@ export const loadArticles = createAsyncThunk(
 
 export const loadUnifiedFeed = createAsyncThunk(
   "content/loadUnifiedFeed",
-  async ({ categories, page }: { categories: Category[]; page: number }) => {
+  async ({ category, page }: { category: Category | null; page: number }) => {
+    const categoriesToFetch = category ? [category] : ALL_CATEGORIES;
+
     const newsPromise = Promise.all(
-      categories.map((cat) => fetchArticlesByCategory(cat, page))
+      categoriesToFetch.map((cat) => fetchArticlesByCategory(cat, page))
     ).then((results) => results.flat());
 
     const moviesPromise =
@@ -74,9 +77,11 @@ export const loadUnifiedFeed = createAsyncThunk(
 
 export const loadTrendingFeed = createAsyncThunk(
   "content/loadTrendingFeed",
-  async ({ categories, page }: { categories: Category[]; page: number }) => {
+  async ({ category, page }: { category: Category | null; page: number }) => {
+    const categoriesToFetch = category ? [category] : ALL_CATEGORIES;
+
     const newsPromise = Promise.all(
-      categories.map((cat) => fetchArticlesByCategory(cat, page))
+      categoriesToFetch.map((cat) => fetchArticlesByCategory(cat, page))
     ).then((results) => results.flat());
 
     const moviesPromise =
@@ -93,8 +98,7 @@ export const loadTrendingFeed = createAsyncThunk(
 
     const sortedNews = [...newsResults].sort(
       (a, b) =>
-        new Date(b.publishedAt).getTime() -
-        new Date(a.publishedAt).getTime()
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
 
     type ScoredItem = {
@@ -115,9 +119,7 @@ export const loadTrendingFeed = createAsyncThunk(
 
       ...sortedNews.map((article, index) => ({
         item: { ...article, contentType: "news" as const },
-        score:
-          (sortedNews.length - index) /
-          (sortedNews.length || 1),
+        score: (sortedNews.length - index) / (sortedNews.length || 1),
       })),
     ];
 
@@ -151,19 +153,16 @@ const contentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Articles
       .addCase(loadArticles.pending, (state) => {
         state.status = "loading";
       })
       .addCase(loadArticles.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-
         state.articles =
           requestedPage === 1
             ? action.payload
             : [...state.articles, ...action.payload];
-
         state.hasMore = action.payload.length > 0;
         state.page = requestedPage + 1;
       })
@@ -172,19 +171,16 @@ const contentSlice = createSlice({
         state.error = action.error.message ?? "Failed to load articles";
       })
 
-      // Unified Feed
       .addCase(loadUnifiedFeed.pending, (state) => {
         state.status = "loading";
       })
       .addCase(loadUnifiedFeed.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-
         state.feed =
           requestedPage === 1
             ? action.payload
             : [...state.feed, ...action.payload];
-
         state.hasMore = action.payload.some(
           (item) => item.contentType === "news"
         );
@@ -195,19 +191,16 @@ const contentSlice = createSlice({
         state.error = action.error.message ?? "Failed to load feed";
       })
 
-      // Trending Feed
       .addCase(loadTrendingFeed.pending, (state) => {
         state.status = "loading";
       })
       .addCase(loadTrendingFeed.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-
         state.feed =
           requestedPage === 1
             ? action.payload
             : [...state.feed, ...action.payload];
-
         state.hasMore = action.payload.some(
           (item) => item.contentType === "news"
         );
@@ -218,19 +211,21 @@ const contentSlice = createSlice({
         state.error = action.error.message ?? "Failed to load trending feed";
       })
 
-      // Search
-      .addCase(loadSearchResults.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(loadSearchResults.fulfilled, (state, action) => {
+       .addCase(loadSearchResults.fulfilled, (state, action) => {
         state.status = "succeeded";
         const requestedPage = action.meta.arg.page;
-
+        const searchFeedItems: FeedItem[] = action.payload.map((article) => ({
+          ...article,
+          contentType: "news" as const,
+        }));
         state.articles =
           requestedPage === 1
             ? action.payload
             : [...state.articles, ...action.payload];
-
+        state.feed =
+          requestedPage === 1
+            ? searchFeedItems
+            : [...state.feed, ...searchFeedItems];
         state.hasMore = action.payload.length > 0;
         state.page = requestedPage + 1;
       })

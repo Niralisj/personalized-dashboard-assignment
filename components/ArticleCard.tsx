@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { Article } from "@/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { toggleFavorite } from "@/store/slices/favoritesSlice";
@@ -20,18 +20,15 @@ export default function ArticleCard({ article }: { article: Article }) {
     <article
       role="article"
       aria-label={`Article: ${article.title}`}
-      className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col"
-    >
+      className="border border-border rounded-lg overflow-hidden flex flex-col"    >
       {article.urlToImage && (
         <img src={article.urlToImage} alt={article.title} className="w-full h-40 object-cover" />
       )}
       <div className="p-3 flex flex-col flex-1">
         <h3 className="font-semibold text-sm mb-1 line-clamp-2">{article.title}</h3>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 line-clamp-3 flex-1">
-          {article.description}
+          <p className="text-xs mb-1 line-clamp-3 flex-1" style={{ color: "var(--muted)" }}>          {article.description}
         </p>
-        <span className="text-xs text-gray-400 mb-2">
-          {estimateReadingTime(article.description)} min read
+          <span className="text-xs mb-2" style={{ color: "var(--muted)" }}>          {estimateReadingTime(article.description)} min read
         </span>
         <div className="flex items-center justify-between">
           
@@ -39,8 +36,8 @@ export default function ArticleCard({ article }: { article: Article }) {
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium text-blue-600 dark:text-blue-400"
-          >
+            className="text-xs font-medium"
+            style={{ color: "var(--accent)" }}          >
             Read More
           </a>
 

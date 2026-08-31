@@ -2,49 +2,56 @@
 
 import { useState } from "react";
 
+import { useAppSelector } from "@/store/hooks";
+
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header/Header";
-import SettingsPanel from "@/components/SettingsPanel";
-import ContentFeed from "@/components/ContentFeed";
-import DarkModeToggle from "@/components/DarkModeToggle";
 import FeaturedNews from "@/components/Header/FeaturedNews";
+import CategoryChips from "@/components/Header/CategoryChips";
+import ContentFeed from "@/components/ContentFeed";
+import SettingsPanel from "@/components/SettingsPanel";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 type View = "feed" | "trending" | "favorites";
 
 export default function Home() {
   const [activeView, setActiveView] = useState<View>("feed");
 
-const featuredArticle = {
-  id: "featured",
-  title: "AI is reshaping software engineering in 2026",
-  description:
-    "Discover the biggest stories across technology, finance and entertainment in one personalized dashboard.",
-  url: "#",
-  urlToImage:
-    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200",
-  publishedAt: new Date().toISOString(),
-  source: { name: "Content Hub" },
-  category: "technology",
-};
+  const feed = useAppSelector((state) => state.content.feed);
+
+  const featuredArticle = feed.find(
+    (item): item is Extract<typeof feed[number], { contentType: "news" }> =>
+      item.contentType === "news"
+  );
+
   return (
-    <div className="min-h-screen flex bg-[#f5f6fb] dark:bg-zinc-950">
+    <div className="min-h-screen flex bg-[var(--background)]">
       <Sidebar activeView={activeView} onChangeView={setActiveView} />
 
       <main className="flex-1 flex flex-col">
+
+      
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
-          {/* Top section */}
+          {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-8">
             <Header />
             <DarkModeToggle />
           </div>
-          {/* Featured News goes here */}
-          <FeaturedNews article={featuredArticle} />
 
+          {/* Only show on Feed */}
+          {activeView === "feed" && (
+          <>
+          {featuredArticle && <FeaturedNews article={featuredArticle} />}
+           <CategoryChips />
+            </>
+           )}
+
+          {/* Feed / Trending / Favorites */}
           <ContentFeed view={activeView} />
         </div>
       </main>
 
-      <aside className="w-72 border-l border-zinc-200 dark:border-zinc-800 p-6 hidden xl:block bg-white dark:bg-zinc-900">
+        <aside className="hidden xl:block w-72 border-l p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <SettingsPanel />
       </aside>
     </div>
